@@ -44,25 +44,16 @@ class ALU_ADDER(Elaboratable):
             O.eq(Mux(self.data_type == DATA_TYPES._4x64b, 1, 0))
         ]
 
-        O0: Signal = Signal(b + 1)
-        O1: Signal = Signal(b + 1)
-        O2: Signal = Signal(b + 1)
-        O3: Signal = Signal(b + 1)
-        O4: Signal = Signal(b + 1)
-        O5: Signal = Signal(b + 1)
-        O6: Signal = Signal(b + 1)
-        O7: Signal = Signal(b + 1)
-
         for i in range(n-b, b):
             m.d.comb += [
-                nXb[i].eq(  op1[0:8] + op2[0:8]),
-                nXb[i+1].eq(op1[0:8] + op2[8:8]   + nXb[i]  [-1]& D),
-                nXb[i+2].eq(op1[0:8] + op2[16:24] + nXb[i+1][-1]& Q),
-                nXb[i+3].eq(op1[0:8] + op2[24:32] + nXb[i+2][-1]&(D|Q)),
-                nXb[i+4].eq(op1[0:8] + op2[32:40] + nXb[i+3][-1]& O),
-                nXb[i+5].eq(op1[0:8] + op2[40:48] + nXb[i+4][-1]&(D|O)),
-                nXb[i+6].eq(op1[0:8] + op2[48:56] + nXb[i+5][-1]&(Q|O)),
-                nXb[i+7].eq(op1[0:8] + op2[56:64] + nXb[i+6][-1]&(D|O|Q)),
+                nXb[i].eq(  op1[0:8]   + op2[0:8]),
+                nXb[i+1].eq(op1[8:16]  + op2[8:16]  + nXb[i]  [-1]& D),
+                nXb[i+2].eq(op1[16:24] + op2[16:24] + nXb[i+1][-1]& Q),
+                nXb[i+3].eq(op1[24:32] + op2[24:32] + nXb[i+2][-1]&(D|Q)),
+                nXb[i+4].eq(op1[32:40] + op2[32:40] + nXb[i+3][-1]& O),
+                nXb[i+5].eq(op1[40:48] + op2[40:48] + nXb[i+4][-1]&(D|O)),
+                nXb[i+6].eq(op1[48:56] + op2[48:56] + nXb[i+5][-1]&(Q|O)),
+                nXb[i+7].eq(op1[56:64] + op2[56:64] + nXb[i+6][-1]&(D|O|Q)),
             ]
 
         return m
