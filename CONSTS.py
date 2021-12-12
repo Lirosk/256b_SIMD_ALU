@@ -11,3 +11,10 @@ class ALU_FUNCS(Enum):
 
     LSHIFT = 6
     RSHIFT = 7
+
+
+class DATA_TYPES(Enum):
+    _32x8b = 0
+    _16x16b = 1
+    _8x32b = 2
+    _4x64b = 3
