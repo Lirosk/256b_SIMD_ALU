@@ -58,41 +58,49 @@ class ALU(Elaboratable):
         yield DQO_any.eq(D|Q|O)
 
         for i in range(0, n, b):
-            temp0: Signal = Signal()
-            temp1: Signal = Signal()
-            temp2: Signal = Signal()
-            temp3: Signal = Signal()
-            temp4: Signal = Signal()
-            temp5: Signal = Signal()
-            temp6: Signal = Signal()
-            temp7: Signal = Signal()
+            temp00: Signal = Signal()
+            temp01: Signal = Signal()
+            temp02: Signal = Signal()
+            temp03: Signal = Signal()
+            temp04: Signal = Signal()
+            temp05: Signal = Signal()
+            temp06: Signal = Signal()
+            temp07: Signal = Signal()
+
+            temp10: Signal = Signal()
+            temp12: Signal = Signal()
+            temp14: Signal = Signal()
+            temp16: Signal = Signal()
+
+            temp20: Signal = Signal()
+            temp24: Signal = Signal()
 
             yield [
-                temp0.eq(_op1[(i)  *b:(i+1)*b] > _op2[(i)  *b:(i+1)*b]),
-                temp1.eq(_op1[(i+1)*b:(i+2)*b] > _op2[(i+1)*b:(i+2)*b]),
-                temp2.eq(_op1[(i+2)*b:(i+3)*b] > _op2[(i+2)*b:(i+3)*b]),
-                temp3.eq(_op1[(i+3)*b:(i+4)*b] > _op2[(i+3)*b:(i+4)*b]),
-                temp4.eq(_op1[(i+4)*b:(i+5)*b] > _op2[(i+4)*b:(i+5)*b]),
-                temp5.eq(_op1[(i+5)*b:(i+6)*b] > _op2[(i+5)*b:(i+6)*b]),
-                temp6.eq(_op1[(i+6)*b:(i+7)*b] > _op2[(i+6)*b:(i+7)*b]),
-                temp7.eq(_op1[(i+7)*b:(i+8)*b] > _op2[(i+7)*b:(i+8)*b]),
+                temp00.eq(_op1[(i)  *b:(i+1)*b] > _op2[(i)  *b:(i+1)*b]),
+                temp01.eq(_op1[(i+1)*b:(i+2)*b] > _op2[(i+1)*b:(i+2)*b]),
+                temp02.eq(_op1[(i+2)*b:(i+3)*b] > _op2[(i+2)*b:(i+3)*b]),
+                temp03.eq(_op1[(i+3)*b:(i+4)*b] > _op2[(i+3)*b:(i+4)*b]),
+                temp04.eq(_op1[(i+4)*b:(i+5)*b] > _op2[(i+4)*b:(i+5)*b]),
+                temp05.eq(_op1[(i+5)*b:(i+6)*b] > _op2[(i+5)*b:(i+6)*b]),
+                temp06.eq(_op1[(i+6)*b:(i+7)*b] > _op2[(i+6)*b:(i+7)*b]),
+                temp07.eq(_op1[(i+7)*b:(i+8)*b] > _op2[(i+7)*b:(i+8)*b]),
 
-                nXb[i]  .eq(temp0 & Mux(DQO_any, temp1, 1)),
-                nXb[i+1].eq(Mux(DQO_any, 0, temp1)),
-                nXb[i+2].eq(temp2 & Mux(DQO_any, temp3, 1)),
-                nXb[i+3].eq(Mux(DQO_any, 0, temp3)),
-                nXb[i+4].eq(temp4 & Mux(DQO_any, temp5, 1)),
-                nXb[i+5].eq(Mux(DQO_any, 0, temp5)),
-                nXb[i+6].eq(temp6 & Mux(DQO_any, temp7, 1)),
-                nXb[i+7].eq(Mux(DQO_any, 0, temp7)),
+                temp10.eq(Mux(DQO_any, temp01, temp00)),
+                nXb[i+1].eq(Mux(DQO_any, 0, temp01)),
+                temp12.eq(Mux(DQO_any, temp03, temp02)),
+                nXb[i+3].eq(Mux(DQO_any, 0, temp03)),
+                temp14.eq(Mux(DQO_any, temp05, temp04)),
+                nXb[i+5].eq(Mux(DQO_any, 0, temp05)),
+                temp16.eq(Mux(DQO_any, temp07, temp06)),
+                nXb[i+7].eq(Mux(DQO_any, 0, temp07)),
 
-                nXb[i]  .eq(temp0 & Mux(DQO_any, temp1, 1) & Mux(Q|O, temp2 & Mux(DQO_any, temp3, 1), 1)),
-                nXb[i+2].eq(Mux(Q|O, 0, temp2 & Mux(DQO_any, temp3, 1))),
-                nXb[i+4].eq(temp4 & Mux(DQO_any, temp5, 1) & Mux(Q|O, temp6 & Mux(DQO_any, temp7, 1), 1)),
-                nXb[i+6].eq(Mux(Q|O, 0, temp6 & Mux(DQO_any, temp7, 1))),
+                temp20.eq(Mux(Q|O, temp12, temp10)),
+                nXb[i+2].eq(Mux(Q|O, 0, temp12)),
+                temp24.eq(Mux(Q|O, temp16, temp14)),
+                nXb[i+6].eq(Mux(Q|O, 0, temp16)),
 
-                nXb[i]  .eq(temp0 & Mux(DQO_any, temp1, 1) & Mux(Q|O, temp2 & Mux(DQO_any, temp3, 1), 1) & Mux(O, temp4 & Mux(DQO_any, temp5, 1) & Mux(Q|O, temp6 & Mux(DQO_any, temp7, 1), 1), 1)),
-                nXb[i+4].eq(Mux(O, 0, temp4 & Mux(DQO_any, temp5, 1) & Mux(Q|O, temp6 & Mux(DQO_any, temp7, 1), 1)))
+                nXb[i]  .eq(Mux(O, temp24, temp12)),
+                nXb[i+4].eq(Mux(O, 0, temp14)),
             ]  
 
 
@@ -128,41 +136,49 @@ class ALU(Elaboratable):
         yield DQO_any.eq(D|Q|O)
 
         for i in range(0, n, b):
-            temp0: Signal = Signal()
-            temp1: Signal = Signal()
-            temp2: Signal = Signal()
-            temp3: Signal = Signal()
-            temp4: Signal = Signal()
-            temp5: Signal = Signal()
-            temp6: Signal = Signal()
-            temp7: Signal = Signal()
+            temp00: Signal = Signal()
+            temp01: Signal = Signal()
+            temp02: Signal = Signal()
+            temp03: Signal = Signal()
+            temp04: Signal = Signal()
+            temp05: Signal = Signal()
+            temp06: Signal = Signal()
+            temp07: Signal = Signal()
+
+            temp10: Signal = Signal()
+            temp12: Signal = Signal()
+            temp14: Signal = Signal()
+            temp16: Signal = Signal()
+
+            temp20: Signal = Signal()
+            temp24: Signal = Signal()
 
             yield [
-                temp0.eq(_op1[(i)  *b:(i+1)*b] == _op2[(i)  *b:(i+1)*b]),
-                temp1.eq(_op1[(i+1)*b:(i+2)*b] == _op2[(i+1)*b:(i+2)*b]),
-                temp2.eq(_op1[(i+2)*b:(i+3)*b] == _op2[(i+2)*b:(i+3)*b]),
-                temp3.eq(_op1[(i+3)*b:(i+4)*b] == _op2[(i+3)*b:(i+4)*b]),
-                temp4.eq(_op1[(i+4)*b:(i+5)*b] == _op2[(i+4)*b:(i+5)*b]),
-                temp5.eq(_op1[(i+5)*b:(i+6)*b] == _op2[(i+5)*b:(i+6)*b]),
-                temp6.eq(_op1[(i+6)*b:(i+7)*b] == _op2[(i+6)*b:(i+7)*b]),
-                temp7.eq(_op1[(i+7)*b:(i+8)*b] == _op2[(i+7)*b:(i+8)*b]),
+                temp00.eq(_op1[(i)  *b:(i+1)*b] == _op2[(i)  *b:(i+1)*b]),
+                temp01.eq(_op1[(i+1)*b:(i+2)*b] == _op2[(i+1)*b:(i+2)*b]),
+                temp02.eq(_op1[(i+2)*b:(i+3)*b] == _op2[(i+2)*b:(i+3)*b]),
+                temp03.eq(_op1[(i+3)*b:(i+4)*b] == _op2[(i+3)*b:(i+4)*b]),
+                temp04.eq(_op1[(i+4)*b:(i+5)*b] == _op2[(i+4)*b:(i+5)*b]),
+                temp05.eq(_op1[(i+5)*b:(i+6)*b] == _op2[(i+5)*b:(i+6)*b]),
+                temp06.eq(_op1[(i+6)*b:(i+7)*b] == _op2[(i+6)*b:(i+7)*b]),
+                temp07.eq(_op1[(i+7)*b:(i+8)*b] == _op2[(i+7)*b:(i+8)*b]),
 
-                nXb[i]  .eq(temp0 & Mux(DQO_any, temp1, 1)),
-                nXb[i+1].eq(Mux(DQO_any, 0, temp1)),
-                nXb[i+2].eq(temp2 & Mux(DQO_any, temp3, 1)),
-                nXb[i+3].eq(Mux(DQO_any, 0, temp3)),
-                nXb[i+4].eq(temp4 & Mux(DQO_any, temp5, 1)),
-                nXb[i+5].eq(Mux(DQO_any, 0, temp5)),
-                nXb[i+6].eq(temp6 & Mux(DQO_any, temp7, 1)),
-                nXb[i+7].eq(Mux(DQO_any, 0, temp7)),
+                temp10.eq(temp00 & Mux(DQO_any, temp01, 1)),
+                nXb[i+1].eq(Mux(DQO_any, 0, temp01)),
+                temp12.eq(temp02 & Mux(DQO_any, temp03, 1)),
+                nXb[i+3].eq(Mux(DQO_any, 0, temp03)),
+                temp14.eq(temp04 & Mux(DQO_any, temp05, 1)),
+                nXb[i+5].eq(Mux(DQO_any, 0, temp05)),
+                temp16.eq(temp06 & Mux(DQO_any, temp07, 1)),
+                nXb[i+7].eq(Mux(DQO_any, 0, temp07)),
 
-                nXb[i]  .eq(temp0 & Mux(DQO_any, temp1, 1) & Mux(Q|O, temp2 & Mux(DQO_any, temp3, 1), 1)),
-                nXb[i+2].eq(Mux(Q|O, 0, (temp2 & Mux(DQO_any, temp3, 1)))),
-                nXb[i+4].eq(temp4 & Mux(DQO_any, temp5, 1) & Mux(Q|O, temp6 & Mux(DQO_any, temp7, 1), 1)), 
-                nXb[i+6].eq(Mux(Q|O, 0, (temp4 & Mux(DQO_any, temp5, 1)))),
+                temp20.eq(temp10 & Mux(Q|O, temp12, 1)),
+                nXb[i+2].eq(Mux(Q|O, 0, temp12)),
+                temp24.eq(temp14 & Mux(Q|O, temp16, 1)), 
+                nXb[i+6].eq(Mux(Q|O, 0, temp14)),
 
-                nXb[i]  .eq(temp0 & Mux(DQO_any, temp1, 1) & Mux(Q|O, temp2 & Mux(DQO_any, temp3, 1), 1) & Mux(O, temp4 & Mux(DQO_any, temp5, 1) & Mux(Q|O, temp6 & Mux(DQO_any, temp7, 1), 1), 1)),
-                nXb[i+4].eq(Mux(O, 0, temp4 & Mux(DQO_any, temp5, 1) & Mux(Q|O, temp6 & Mux(DQO_any, temp7, 1), 1)))
+                nXb[i]  .eq(temp20 & Mux(O, temp24, 1)),
+                nXb[i+4].eq(Mux(O, 0, temp24)),
             ]  
 
 
@@ -247,6 +263,10 @@ def alu_test(alu: ALU):
     print(f'{s = }\n{f = }')
 
 
+def alu_moreless_test(alu: ALU):
+    pass
+
+
 def alu_equal_test(alu: ALU):
     yield from alu_ut(alu, ALU_FUNCS.EQ,
         '01_01_01_01_01_01_01_01_01_01_01_01_01_01_01_01_01_01_01_01_01_01_01_01_01_01_01_01_01_01_01_01', 
@@ -298,7 +318,7 @@ def alu_equal_test(alu: ALU):
     )
 
     
-def alu_add_test(alu):
+def alu_add_test(alu: ALU):
     yield from alu_ut(alu, ALU_FUNCS.ADD,
         'FF_FF_FF_FF_FF_FF_FF_FF_FF_FF_FF_FF_FF_FF_FF_FF_FF_FF_FF_FF_FF_FF_FF_FF_FF_FF_FF_FF_FF_FF_FF_FF',
         '1',
