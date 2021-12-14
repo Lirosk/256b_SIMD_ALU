@@ -10,9 +10,10 @@ class ALU_FUNCS(Enum):
 
     EQ = 5
     MORE = 6
+    LESS = 7
 
-    LSHIFT = 7
-    RSHIFT = 8
+    LSHIFT = 8
+    RSHIFT = 9
 
 
 class DATA_TYPES(Enum):

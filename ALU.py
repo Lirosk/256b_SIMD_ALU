@@ -25,8 +25,80 @@ class ALU(Elaboratable):
                 m.d.comb += list(self.adder_logic_gen())
             with m.Case(ALU_FUNCS.EQ):
                 m.d.comb += list(self.equal_logic_gen())
+            with m.Case(ALU_FUNCS.MORE, ALU_FUNCS.LESS):
+                m.d.comb += list(self.more_logic_gen())
 
         return m
+
+    def more_logic_gen(self):
+        _op1: Signal = Signal(256)
+        _op2: Signal = Signal(256)
+
+        n = 32
+        b = 256//n
+
+        yield _op1.eq(Mux(self.func == ALU_FUNCS.MORE, self.op1, self.op2))
+        yield _op2.eq(Mux(self.func == ALU_FUNCS.MORE, self.op2, self.op1))
+
+        nXb: List[Signal] = []
+        for i in range(n):
+            nXb.append(Signal())
+
+        D: Signal = Signal()
+        Q: Signal = Signal()
+        O: Signal = Signal()
+
+        yield [ 
+            D.eq(Mux(self.data_type == DATA_TYPES._16x16b, 1, 0)),
+            Q.eq(Mux(self.data_type == DATA_TYPES._8x32b,  1, 0)),
+            O.eq(Mux(self.data_type == DATA_TYPES._4x64b,  1, 0)),
+        ]
+
+        DQO_any: Signal = Signal()
+        yield DQO_any.eq(D|Q|O)
+
+        for i in range(0, n, b):
+            temp0: Signal = Signal()
+            temp1: Signal = Signal()
+            temp2: Signal = Signal()
+            temp3: Signal = Signal()
+            temp4: Signal = Signal()
+            temp5: Signal = Signal()
+            temp6: Signal = Signal()
+            temp7: Signal = Signal()
+
+            yield [
+                temp0.eq(_op1[(i)  *b:(i+1)*b] > _op2[(i)  *b:(i+1)*b]),
+                temp1.eq(_op1[(i+1)*b:(i+2)*b] > _op2[(i+1)*b:(i+2)*b]),
+                temp2.eq(_op1[(i+2)*b:(i+3)*b] > _op2[(i+2)*b:(i+3)*b]),
+                temp3.eq(_op1[(i+3)*b:(i+4)*b] > _op2[(i+3)*b:(i+4)*b]),
+                temp4.eq(_op1[(i+4)*b:(i+5)*b] > _op2[(i+4)*b:(i+5)*b]),
+                temp5.eq(_op1[(i+5)*b:(i+6)*b] > _op2[(i+5)*b:(i+6)*b]),
+                temp6.eq(_op1[(i+6)*b:(i+7)*b] > _op2[(i+6)*b:(i+7)*b]),
+                temp7.eq(_op1[(i+7)*b:(i+8)*b] > _op2[(i+7)*b:(i+8)*b]),
+
+                nXb[i]  .eq(temp0 & Mux(DQO_any, temp1, 1)),
+                nXb[i+1].eq(Mux(DQO_any, 0, temp1)),
+                nXb[i+2].eq(temp2 & Mux(DQO_any, temp3, 1)),
+                nXb[i+3].eq(Mux(DQO_any, 0, temp3)),
+                nXb[i+4].eq(temp4 & Mux(DQO_any, temp5, 1)),
+                nXb[i+5].eq(Mux(DQO_any, 0, temp5)),
+                nXb[i+6].eq(temp6 & Mux(DQO_any, temp7, 1)),
+                nXb[i+7].eq(Mux(DQO_any, 0, temp7)),
+
+                nXb[i]  .eq(temp0 & Mux(DQO_any, temp1, 1) & Mux(Q|O, temp2 & Mux(DQO_any, temp3, 1), 1)),
+                nXb[i+2].eq(Mux(Q|O, 0, temp2 & Mux(DQO_any, temp3, 1))),
+                nXb[i+4].eq(temp4 & Mux(DQO_any, temp5, 1) & Mux(Q|O, temp6 & Mux(DQO_any, temp7, 1), 1)),
+                nXb[i+6].eq(Mux(Q|O, 0, temp6 & Mux(DQO_any, temp7, 1))),
+
+                nXb[i]  .eq(temp0 & Mux(DQO_any, temp1, 1) & Mux(Q|O, temp2 & Mux(DQO_any, temp3, 1), 1) & Mux(O, temp4 & Mux(DQO_any, temp5, 1) & Mux(Q|O, temp6 & Mux(DQO_any, temp7, 1), 1), 1)),
+                nXb[i+4].eq(Mux(O, 0, temp4 & Mux(DQO_any, temp5, 1) & Mux(Q|O, temp6 & Mux(DQO_any, temp7, 1), 1)))
+            ]  
+
+
+        for i in range(n):
+            yield self.res[i*b:(i+1)*b].eq(nXb[i])
+
 
     def equal_logic_gen(self):
         _op1: Signal = Signal(256)
@@ -96,10 +168,6 @@ class ALU(Elaboratable):
 
         for i in range(n):
             yield self.res[i*b:(i+1)*b].eq(nXb[i])
-        i = 0
-        yield self.buf.eq(
-            _op1[(i)  *b:(i+1)*b] == _op2[(i)  *b:(i+1)*b]
-        )
 
 
     def adder_logic_gen(self):
