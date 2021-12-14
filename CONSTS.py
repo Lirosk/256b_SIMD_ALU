@@ -1,16 +1,18 @@
 from enum import Enum
 
 class ALU_FUNCS(Enum):
-    ADD = 0
+    NONE = 0
+
+    ADD = 1
     SUB = 2
-    MUL = 2
-    DIV = 3
+    MUL = 3
+    DIV = 4
 
-    EQ = 4
-    MORE = 5
+    EQ = 5
+    MORE = 6
 
-    LSHIFT = 6
-    RSHIFT = 7
+    LSHIFT = 7
+    RSHIFT = 8
 
 
 class DATA_TYPES(Enum):
