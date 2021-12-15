@@ -67,16 +67,22 @@ class ALU(Elaboratable):
             temp05: Signal = Signal()
             temp06: Signal = Signal()
             temp07: Signal = Signal()
-
             temp10: Signal = Signal()
             temp12: Signal = Signal()
             temp14: Signal = Signal()
             temp16: Signal = Signal()
-
             temp20: Signal = Signal()
             temp24: Signal = Signal()
-
+            eq1: Signal = Signal()
+            eq3: Signal = Signal()
+            eq5: Signal = Signal()
+            eq7: Signal = Signal()
             yield [
+                eq1.eq(_op1[(i+1)*b:(i+2)*b] == _op2[(i+1)*b:(i+2)*b]),
+                eq3.eq(_op1[(i+3)*b:(i+4)*b] == _op2[(i+3)*b:(i+4)*b]),
+                eq5.eq(_op1[(i+5)*b:(i+6)*b] == _op2[(i+5)*b:(i+6)*b]),
+                eq7.eq(_op1[(i+7)*b:(i+8)*b] == _op2[(i+7)*b:(i+8)*b]),
+
                 temp00.eq(_op1[(i)  *b:(i+1)*b] > _op2[(i)  *b:(i+1)*b]),
                 temp01.eq(_op1[(i+1)*b:(i+2)*b] > _op2[(i+1)*b:(i+2)*b]),
                 temp02.eq(_op1[(i+2)*b:(i+3)*b] > _op2[(i+2)*b:(i+3)*b]),
@@ -86,23 +92,22 @@ class ALU(Elaboratable):
                 temp06.eq(_op1[(i+6)*b:(i+7)*b] > _op2[(i+6)*b:(i+7)*b]),
                 temp07.eq(_op1[(i+7)*b:(i+8)*b] > _op2[(i+7)*b:(i+8)*b]),
 
-                temp10.eq(Mux(DQO_any, temp01, temp00)),
+                temp10.eq(Mux(DQO_any & (~eq1), temp01, temp00)),
                 nXb[i+1].eq(Mux(DQO_any, 0, temp01)),
-                temp12.eq(Mux(DQO_any, temp03, temp02)),
+                temp12.eq(Mux(DQO_any & (~eq3), temp03, temp02)),
                 nXb[i+3].eq(Mux(DQO_any, 0, temp03)),
-                temp14.eq(Mux(DQO_any, temp05, temp04)),
+                temp14.eq(Mux(DQO_any & (~eq5), temp05, temp04)),
                 nXb[i+5].eq(Mux(DQO_any, 0, temp05)),
-                temp16.eq(Mux(DQO_any, temp07, temp06)),
+                temp16.eq(Mux(DQO_any & (~eq7), temp07, temp06)),
                 nXb[i+7].eq(Mux(DQO_any, 0, temp07)),
-
+                
                 temp20.eq(Mux(Q|O, temp12, temp10)),
                 nXb[i+2].eq(Mux(Q|O, 0, temp12)),
                 temp24.eq(Mux(Q|O, temp16, temp14)),
                 nXb[i+6].eq(Mux(Q|O, 0, temp16)),
-
                 nXb[i]  .eq(Mux(O, temp24, temp20)),
                 nXb[i+4].eq(Mux(O, 0, temp24)),
-            ]  
+            ] 
 
         for i in range(n):
             yield self.res[i*b:(i+1)*b].eq(nXb[i])
