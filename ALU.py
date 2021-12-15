@@ -27,6 +27,11 @@ class ALU(Elaboratable):
                 m.d.comb += list(self.equal_logic_gen())
             with m.Case(ALU_FUNCS.MORE, ALU_FUNCS.LESS):
                 m.d.comb += list(self.moreless_logic_gen())
+            with m.Case(ALU_FUNCS.SHR, ALU_FUNCS.SHL):
+                m.d.comb += list(self.sh_logic_gen())
+
+        m.d.comb += self.buf.eq(7)
+        m.d.comb += self.buf[0].eq(self.buf[0] & 0)
 
         return m
 
@@ -167,6 +172,78 @@ class ALU(Elaboratable):
             yield self.buf.eq(
                 temp03
             )
+
+    def sh_logic_gen(self):
+        _op1: Signal = Signal(256)
+        _op2: Signal = Signal(256)
+
+        n = 32
+        b = 256//n
+
+        # yield _op1.eq(self.op1)
+        yield _op2.eq(self.op2)
+        yield _op1.eq(Mux(self.func == ALU_FUNCS.SHL, self.op1, self.op1[::-1]) << _op2)
+        
+        nXb: List[Signal] = []
+        for i in range(n):
+            nXb.append(Signal())
+
+        D: Signal = Signal()
+        Q: Signal = Signal()
+        O: Signal = Signal()
+
+        yield [ 
+            D.eq(Mux(self.data_type == DATA_TYPES._16x16b, 1, 0)),
+            Q.eq(Mux(self.data_type == DATA_TYPES._8x32b,  1, 0)),
+            O.eq(Mux(self.data_type == DATA_TYPES._4x64b,  1, 0)),
+        ]
+
+        DQO_any: Signal = Signal()
+        yield DQO_any.eq(D|Q|O)
+
+
+
+        for i in range(0, n, b):
+            temp00: Signal = Signal()
+            temp01: Signal = Signal()
+            temp02: Signal = Signal()
+            temp03: Signal = Signal()
+            temp04: Signal = Signal()
+            temp05: Signal = Signal()
+            temp06: Signal = Signal()
+            temp07: Signal = Signal()
+
+            yield [
+                # nXb[i]  .eq(_op1[(i)  *b:(i+1)*b] << _op2),
+                # nXb[i+1].eq(_op1[(i+1)*b:(i+2)*b] << _op2),
+                # nXb[i+2].eq(_op1[(i+2)*b:(i+3)*b] << _op2),
+                # nXb[i+3].eq(_op1[(i+3)*b:(i+4)*b] << _op2),
+                # nXb[i+4].eq(_op1[(i+4)*b:(i+5)*b] << _op2),
+                # nXb[i+5].eq(_op1[(i+5)*b:(i+6)*b] << _op2),
+                # nXb[i+6].eq(_op1[(i+6)*b:(i+7)*b] << _op2),
+                # nXb[i+7].eq(_op1[(i+7)*b:(i+8)*b] << _op2),
+
+                temp00.eq(_op1[(i)  *b:(i+1)*b]),
+                temp01.eq(_op1[(i+1)*b:(i+2)*b]),
+                temp02.eq(_op1[(i+2)*b:(i+3)*b]),
+                temp03.eq(_op1[(i+3)*b:(i+4)*b]),
+                temp04.eq(_op1[(i+4)*b:(i+5)*b]),
+                temp05.eq(_op1[(i+5)*b:(i+6)*b]),
+                temp06.eq(_op1[(i+6)*b:(i+7)*b]),
+                temp07.eq(_op1[(i+7)*b:(i+8)*b]),
+
+
+                nXb[i+4].eq(Mux(Q|D,        temp04 << _op2, temp04)),
+
+                nXb[i+2].eq(Mux(D,          temp02 << _op2, temp02)),
+                nXb[i+6].eq(Mux(D,          temp06 << _op2, temp06)),
+
+                nXb[i+1].eq(Mux(~(DQO_any), temp01 << _op2, temp01)),
+                nXb[i+3].eq(Mux(~(DQO_any), temp03 << _op2, temp03)),
+                nXb[i+5].eq(Mux(~(DQO_any), temp05 << _op2, temp05)),
+                nXb[i+7].eq(Mux(~(DQO_any), temp07 << _op2, temp07)),
+            ]
+            
 
 
     def equal_logic_gen(self):
@@ -321,8 +398,17 @@ def alu_test(alu: ALU):
     yield from alu_moreless_test(alu)
     yield from alu_addsub_test(alu)
     yield from alu_equal_test(alu)
+    yield from alu_sh_test(alu)
     
     print(f'{s = }\n{f = }')
+
+def alu_sh_test(alu: ALU):
+    yield from alu_ut(alu, ALU_FUNCS.SHL, 
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00",
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00",
+        DATA_TYPES._32x8b,
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00"
+    )
 
 
 def alu_moreless_test(alu: ALU):
