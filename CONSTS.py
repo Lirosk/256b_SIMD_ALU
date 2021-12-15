@@ -12,8 +12,8 @@ class ALU_FUNCS(Enum):
     MORE = 6
     LESS = 7
 
-    LSHIFT = 8
-    RSHIFT = 9
+    SHL = 8
+    SHR = 9
 
 
 class DATA_TYPES(Enum):
