@@ -2,7 +2,7 @@ from nmigen import *
 from nmigen.back.pysim import *
 from typing import List
 from CONSTS import ALU_FUNCS, DATA_TYPES
-from Utils import to_formatted_hex, to_hex
+from Utils import to_formatted_hex
 
 class ALU(Elaboratable):
     def __init__(self) -> None:
@@ -177,7 +177,6 @@ class ALU(Elaboratable):
         n = 32
         b = 256//n
 
-        # yield _op1.eq(self.op1)
         yield _op2.eq(
             Mux((self.data_type == DATA_TYPES._32x8b) & (self.op2 > b),
                 b,
@@ -212,47 +211,43 @@ class ALU(Elaboratable):
         DQO_any: Signal = Signal()
         yield DQO_any.eq(D|Q|O)
 
-        for_zeros: Signal = Signal(8)
-        yield for_zeros.eq((0xFF >> _op2) << _op2)
+        for_zeros: Signal = Signal(64)
+        yield for_zeros.eq((-1 >> _op2) << _op2)
 
         for i in range(0, n, b):
-            temp01: Signal = Signal(b)
-            temp02: Signal = Signal(b)
-            temp03: Signal = Signal(b)
-            temp04: Signal = Signal(b)
-            temp05: Signal = Signal(b)
-            temp06: Signal = Signal(b)
-            temp07: Signal = Signal(b)
+            temp0q: Signal = Signal(4*b)
+            temp1q: Signal = Signal(4*b)
+
+            temp0d: Signal = Signal(2*b)
+            temp1d: Signal = Signal(2*b)
+            temp2d: Signal = Signal(2*b)
+            temp3d: Signal = Signal(2*b)
 
             yield [
-                nXb[i].eq(_op1[(i)  *b:(i+1)*b]),
-                temp01.eq(_op1[(i+1)*b:(i+2)*b]),
-                temp02.eq(_op1[(i+2)*b:(i+3)*b]),
-                temp03.eq(_op1[(i+3)*b:(i+4)*b]),
-                temp04.eq(_op1[(i+4)*b:(i+5)*b]),
-                temp05.eq(_op1[(i+5)*b:(i+6)*b]),
-                temp06.eq(_op1[(i+6)*b:(i+7)*b]),
-                temp07.eq(_op1[(i+7)*b:(i+8)*b]),
+                temp0q.eq((_op1[(i)  *b: (i+4)*b]) & for_zeros),
+                temp1q.eq((_op1[(i+4)*b: (i+8)*b]) & Mux(Q, for_zeros, -1)),
 
-                nXb[i+4].eq(Mux(  Q|D,      temp04 & for_zeros, temp04)),
+                temp0d.eq(temp0q[   :2*b] & Mux(D, for_zeros, -1)),
+                temp1d.eq(temp0q[2*b:   ] & Mux(D, for_zeros, -1)),
+                temp2d.eq(temp1q[   :2*b] & Mux(D, for_zeros, -1)),
+                temp3d.eq(temp1q[2*b:   ] & Mux(D, for_zeros, -1)),
 
-                nXb[i+2].eq(Mux(  D,        temp02 & for_zeros, temp02)),
-                nXb[i+6].eq(Mux(  D,        temp06 & for_zeros, temp06)),
-
-                nXb[i+1].eq(Mux(~(DQO_any), temp01 & for_zeros, temp01)),
-                nXb[i+3].eq(Mux(~(DQO_any), temp02 & for_zeros, temp02)),
-                nXb[i+3].eq(Mux(~(DQO_any), temp03 & for_zeros, temp03)),
-                nXb[i+4].eq(Mux(~(DQO_any), temp04 & for_zeros, temp04)),
-                nXb[i+5].eq(Mux(~(DQO_any), temp05 & for_zeros, temp05)),
-                nXb[i+6].eq(Mux(~(DQO_any), temp06 & for_zeros, temp06)),
-                nXb[i+7].eq(Mux(~(DQO_any), temp07 & for_zeros, temp07)),
+                nXb[i]  .eq(temp0d[  :b] & Mux(DQO_any != 1, for_zeros, -1)),
+                nXb[i+1].eq(temp0d[b : ] & Mux(DQO_any != 1, for_zeros, -1)),
+                nXb[i+2].eq(temp1d[  :b] & Mux(DQO_any != 1, for_zeros, -1)),
+                nXb[i+3].eq(temp1d[b : ] & Mux(DQO_any != 1, for_zeros, -1)),
+                nXb[i+4].eq(temp2d[  :b] & Mux(DQO_any != 1, for_zeros, -1)),
+                nXb[i+5].eq(temp2d[b : ] & Mux(DQO_any != 1, for_zeros, -1)),
+                nXb[i+6].eq(temp3d[  :b] & Mux(DQO_any != 1, for_zeros, -1)),
+                nXb[i+7].eq(temp3d[b : ] & Mux(DQO_any != 1, for_zeros, -1)),
             ]
 
-        yield self.res.eq(Cat(*nXb))
-        i = 0
-        yield self.buf.eq(
-            _op1[(i+3)*b:(i+4)*b]
-        )
+            if i == b:
+                yield self.buf.eq(
+                    Q
+                )
+
+        yield self.res.eq(Mux(self.func == ALU_FUNCS.SHL, Cat(*nXb), Cat(*nXb)[::-1]))
             
 
     def equal_logic_gen(self):
@@ -410,6 +405,7 @@ def alu_test(alu: ALU):
     
     print(f'{s = }\n{f = }')
 
+
 def alu_sh_test(alu: ALU):
     yield from alu_ut(alu, ALU_FUNCS.SHL, 
         "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00",
@@ -443,6 +439,111 @@ def alu_sh_test(alu: ALU):
         "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_10_B0_A0",
         "4",
         DATA_TYPES._32x8b,
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00"
+    )
+
+    yield from alu_ut(alu, ALU_FUNCS.SHL, 
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_10_B0_A0",
+        "4",
+        DATA_TYPES._16x16b,
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_01_00_0A_00"
+    )
+
+    yield from alu_ut(alu, ALU_FUNCS.SHL, 
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_FC_10_0B_A0",
+        "4",
+        DATA_TYPES._16x16b,
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_C1_00_BA_00"
+    )
+
+    yield from alu_ut(alu, ALU_FUNCS.SHL, 
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_"+"FC_10_0B_AA",
+        "10",
+        DATA_TYPES._8x32b,
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_"+"0B_AA_00_00"
+    )
+
+    yield from alu_ut(alu, ALU_FUNCS.SHL, 
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_"+"00_00_00_00_FC_10_0B_AA",
+        "20",
+        DATA_TYPES._4x64b,
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_"+"FC_10_0B_AA_00_00_00_00"
+    )
+
+    yield from alu_ut(alu, ALU_FUNCS.SHL, 
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_"+"FC_10_0B_AA_00_00_00_00",
+        "20",
+        DATA_TYPES._4x64b,
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00"
+    )
+
+    yield from alu_ut(alu, ALU_FUNCS.SHR, 
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00",
+        "0",
+        DATA_TYPES._32x8b,
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00"
+    )
+
+    yield from alu_ut(alu, ALU_FUNCS.SHR, 
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00",
+        "1",
+        DATA_TYPES._32x8b,
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00"
+    )
+
+    yield from alu_ut(alu, ALU_FUNCS.SHR, 
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_0A_10_B0_A0",
+        "4",
+        DATA_TYPES._32x8b,
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_01_0B_0A"
+    )
+
+    yield from alu_ut(alu, ALU_FUNCS.SHR, 
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_04_02_01",
+        "1",
+        DATA_TYPES._32x8b,
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_02_01_00"
+    )
+
+    yield from alu_ut(alu, ALU_FUNCS.SHR, 
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_01_0B_0A",
+        "4",
+        DATA_TYPES._32x8b,
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00"
+    )
+
+    yield from alu_ut(alu, ALU_FUNCS.SHR, 
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_12_34_56_78",
+        "4",
+        DATA_TYPES._16x16b,
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_01_23_05_67"
+    )
+
+    yield from alu_ut(alu, ALU_FUNCS.SHR, 
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_FC_10_0B_A0",
+        "4",
+        DATA_TYPES._16x16b,
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_0F_C1_00_BA"
+    )
+
+    yield from alu_ut(alu, ALU_FUNCS.SHR, 
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_"+"FC_10_0B_AA",
+        "10",
+        DATA_TYPES._8x32b,
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_"+"00_00_FC_10"
+    )
+
+    yield from alu_ut(alu, ALU_FUNCS.SHR, 
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_"+"FC_10_0B_AA_00_00_00_00",
+        "20",
+        DATA_TYPES._4x64b,
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_"+"00_00_00_00_FC_10_0B_AA"
+    )
+
+    yield from alu_ut(alu, ALU_FUNCS.SHR, 
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_"+"00_00_00_00_FC_10_0B_AA",
+        "20",
+        DATA_TYPES._4x64b,
         "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00"
     )
 
