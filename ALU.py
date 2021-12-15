@@ -7,14 +7,13 @@ from Utils import to_formatted_hex
 class ALU(Elaboratable):
     def __init__(self) -> None:
         super().__init__()
-        self.op1: Signal = Signal(256, reset=0)
-        self.op2: Signal = Signal(256, reset=0)
+        self.op1:       Signal = Signal(256, reset=0)
+        self.op2:       Signal = Signal(256, reset=0)
         self.data_type: Signal = Signal(DATA_TYPES, reset=0)
-        self.func: Signal = Signal(ALU_FUNCS, reset=0)
-        self.res: Signal = Signal(256, reset=0)
-        self.buf: Signal = Signal(256, reset=0)
+        self.func:      Signal = Signal(ALU_FUNCS, reset=0)
+        self.res:       Signal = Signal(256, reset=0)
 
-    def elaborate(self, platform):
+    def elaborate(self, platform) -> Module:
         m = Module()
 
         if platform is None:
@@ -32,7 +31,7 @@ class ALU(Elaboratable):
 
         return m
 
-    def moreless_logic_gen(self):
+    def moreless_logic_gen(self) -> Assign:
         _op1: Signal = Signal(256)
         _op2: Signal = Signal(256)
 
@@ -105,72 +104,11 @@ class ALU(Elaboratable):
                 nXb[i+4].eq(Mux(O, 0, temp24)),
             ]  
 
-
         for i in range(n):
             yield self.res[i*b:(i+1)*b].eq(nXb[i])
-        
-        
-        for i in range(0, 1):
-            temp00: Signal = Signal()
-            temp01: Signal = Signal()
-            temp02: Signal = Signal()
-            temp03: Signal = Signal()
-            temp04: Signal = Signal()
-            temp05: Signal = Signal()
-            temp06: Signal = Signal()
-            temp07: Signal = Signal()
 
-            temp10: Signal = Signal()
-            temp12: Signal = Signal()
-            temp14: Signal = Signal()
-            temp16: Signal = Signal()
 
-            temp20: Signal = Signal()
-            temp24: Signal = Signal()
-
-            eq1: Signal = Signal()
-            eq3: Signal = Signal()
-            eq5: Signal = Signal()
-            eq7: Signal = Signal()
-
-            yield [
-                eq1.eq(_op1[(i+1)*b:(i+2)*b] == _op2[(i+1)*b:(i+2)*b]),
-                eq3.eq(_op1[(i+3)*b:(i+4)*b] == _op2[(i+3)*b:(i+4)*b]),
-                eq5.eq(_op1[(i+5)*b:(i+6)*b] == _op2[(i+5)*b:(i+6)*b]),
-                eq7.eq(_op1[(i+7)*b:(i+8)*b] == _op2[(i+7)*b:(i+8)*b]),
-
-                temp00.eq(_op1[(i)  *b:(i+1)*b] > _op2[(i)  *b:(i+1)*b]),
-                temp01.eq(_op1[(i+1)*b:(i+2)*b] > _op2[(i+1)*b:(i+2)*b]),
-                temp02.eq(_op1[(i+2)*b:(i+3)*b] > _op2[(i+2)*b:(i+3)*b]),
-                temp03.eq(_op1[(i+3)*b:(i+4)*b] > _op2[(i+3)*b:(i+4)*b]),
-                temp04.eq(_op1[(i+4)*b:(i+5)*b] > _op2[(i+4)*b:(i+5)*b]),
-                temp05.eq(_op1[(i+5)*b:(i+6)*b] > _op2[(i+5)*b:(i+6)*b]),
-                temp06.eq(_op1[(i+6)*b:(i+7)*b] > _op2[(i+6)*b:(i+7)*b]),
-                temp07.eq(_op1[(i+7)*b:(i+8)*b] > _op2[(i+7)*b:(i+8)*b]),
-
-                temp10.eq(Mux(DQO_any & (~eq1), temp01, temp00)),
-                nXb[i+1].eq(Mux(DQO_any, 0, temp01)),
-                temp12.eq(Mux(DQO_any & (~eq3), temp03, temp02)),
-                nXb[i+3].eq(Mux(DQO_any, 0, temp03)),
-                temp14.eq(Mux(DQO_any & (~eq5), temp05, temp04)),
-                nXb[i+5].eq(Mux(DQO_any, 0, temp05)),
-                temp16.eq(Mux(DQO_any & (~eq7), temp07, temp06)),
-                nXb[i+7].eq(Mux(DQO_any, 0, temp07)),
-
-                temp20.eq(Mux(Q|O, temp12, temp10)),
-                nXb[i+2].eq(Mux(Q|O, 0, temp12)),
-                temp24.eq(Mux(Q|O, temp16, temp14)),
-                nXb[i+6].eq(Mux(Q|O, 0, temp16)),
-
-                nXb[i]  .eq(Mux(O, temp24, temp20)),
-                nXb[i+4].eq(Mux(O, 0, temp24)),
-                ]  
-
-            yield self.buf.eq(
-                temp03
-            )
-
-    def sh_logic_gen(self):
+    def sh_logic_gen(self) -> Assign:
         _op1: Signal = Signal(256)
         _op2: Signal = Signal(256)
 
@@ -242,15 +180,10 @@ class ALU(Elaboratable):
                 nXb[i+7].eq(temp3d[b : ] & Mux(DQO_any != 1, for_zeros, -1)),
             ]
 
-            if i == b:
-                yield self.buf.eq(
-                    Q
-                )
-
         yield self.res.eq(Mux(self.func == ALU_FUNCS.SHL, Cat(*nXb), Cat(*nXb)[::-1]))
             
 
-    def equal_logic_gen(self):
+    def equal_logic_gen(self) -> Assign:
         _op1: Signal = Signal(256)
         _op2: Signal = Signal(256)
 
@@ -328,7 +261,7 @@ class ALU(Elaboratable):
             yield self.res[i*b:(i+1)*b].eq(nXb[i])
 
 
-    def addsub_logic_gen(self):
+    def addsub_logic_gen(self) -> Assign:
         _op1: Signal = Signal(256)
         _op2: Signal = Signal(256)
 
@@ -375,13 +308,13 @@ class ALU(Elaboratable):
 
 s: int = 0
 f: int = 0
-def alu_ut(alu: ALU, func: ALU_FUNCS, op1: str, op2: str, data_type: DATA_TYPES, expected: str):
+def alu_ut(alu: ALU, func: ALU_FUNCS, op1: str, op2: str, data_type: DATA_TYPES, expected: str) -> Assign:
     global s, f
 
-    yield alu.op1.eq(int(op1, 16))
-    yield alu.op2.eq(int(op2, 16))
+    yield alu.op1      .eq(int(op1, 16))
+    yield alu.op2      .eq(int(op2, 16))
     yield alu.data_type.eq(data_type)
-    yield alu.func.eq(func)
+    yield alu.func     .eq(func)
 
     yield Settle()
 
@@ -390,12 +323,11 @@ def alu_ut(alu: ALU, func: ALU_FUNCS, op1: str, op2: str, data_type: DATA_TYPES,
     if res == expected:
         s += 1
     else:
-        buf = to_formatted_hex((yield alu.buf))
-        print(f'WRONG:\n{op1 = }\n{op2 = }\n{func = }\n{res = }\n{data_type = }\n{expected = }\n{buf = }\n\n')
+        print(f'WRONG:\n{op1 = }\n{op2 = }\n{func = }\n{res = }\n{data_type = }\n{expected = }\n\n')
         f += 1
 
 
-def alu_test(alu: ALU):
+def alu_test(alu: ALU) -> Assign:
     global s, f
 
     yield from alu_moreless_test(alu)
@@ -406,7 +338,7 @@ def alu_test(alu: ALU):
     print(f'{s = }\n{f = }')
 
 
-def alu_sh_test(alu: ALU):
+def alu_sh_test(alu: ALU) -> Assign:
     yield from alu_ut(alu, ALU_FUNCS.SHL, 
         "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00",
         "0",
@@ -548,7 +480,7 @@ def alu_sh_test(alu: ALU):
     )
 
 
-def alu_moreless_test(alu: ALU):
+def alu_moreless_test(alu: ALU) -> Assign:
     yield from alu_ut(alu, ALU_FUNCS.MORE,
         '00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00', 
         '00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00',
@@ -620,7 +552,7 @@ def alu_moreless_test(alu: ALU):
     )
 
 
-def alu_equal_test(alu: ALU):
+def alu_equal_test(alu: ALU) -> Assign:
     yield from alu_ut(alu, ALU_FUNCS.EQ,
         '00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00', 
         '00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00',
@@ -678,7 +610,7 @@ def alu_equal_test(alu: ALU):
     )
 
     
-def alu_addsub_test(alu: ALU):
+def alu_addsub_test(alu: ALU) -> Assign:
     yield from alu_ut(alu, ALU_FUNCS.MORE,
         '00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00', 
         '00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00',
