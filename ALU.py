@@ -30,9 +30,6 @@ class ALU(Elaboratable):
             with m.Case(ALU_FUNCS.SHR, ALU_FUNCS.SHL):
                 m.d.comb += list(self.sh_logic_gen())
 
-        m.d.comb += self.buf.eq(7)
-        m.d.comb += self.buf[0].eq(self.buf[0] & 0)
-
         return m
 
     def moreless_logic_gen(self):
@@ -181,12 +178,26 @@ class ALU(Elaboratable):
         b = 256//n
 
         # yield _op1.eq(self.op1)
-        yield _op2.eq(self.op2)
+        yield _op2.eq(
+            Mux((self.data_type == DATA_TYPES._32x8b) & (self.op2 > b),
+                b,
+                Mux((self.data_type == DATA_TYPES._16x16b) & (self.op2 > 2*b),
+                    2*b,
+                    Mux((self.data_type == DATA_TYPES._8x32b) & (self.op2 > 4*b),
+                        4*b,
+                        Mux((self.data_type == DATA_TYPES._4x64b) & (self.op2 > 8*b),
+                            8*b,
+                            self.op2
+                        )
+                    )
+                )
+            )
+        )
         yield _op1.eq(Mux(self.func == ALU_FUNCS.SHL, self.op1, self.op1[::-1]) << _op2)
         
         nXb: List[Signal] = []
         for i in range(n):
-            nXb.append(Signal())
+            nXb.append(Signal(8))
 
         D: Signal = Signal()
         Q: Signal = Signal()
@@ -201,29 +212,20 @@ class ALU(Elaboratable):
         DQO_any: Signal = Signal()
         yield DQO_any.eq(D|Q|O)
 
-
+        for_zeros: Signal = Signal(8)
+        yield for_zeros.eq((0xFF >> _op2) << _op2)
 
         for i in range(0, n, b):
-            temp00: Signal = Signal()
-            temp01: Signal = Signal()
-            temp02: Signal = Signal()
-            temp03: Signal = Signal()
-            temp04: Signal = Signal()
-            temp05: Signal = Signal()
-            temp06: Signal = Signal()
-            temp07: Signal = Signal()
+            temp01: Signal = Signal(b)
+            temp02: Signal = Signal(b)
+            temp03: Signal = Signal(b)
+            temp04: Signal = Signal(b)
+            temp05: Signal = Signal(b)
+            temp06: Signal = Signal(b)
+            temp07: Signal = Signal(b)
 
             yield [
-                # nXb[i]  .eq(_op1[(i)  *b:(i+1)*b] << _op2),
-                # nXb[i+1].eq(_op1[(i+1)*b:(i+2)*b] << _op2),
-                # nXb[i+2].eq(_op1[(i+2)*b:(i+3)*b] << _op2),
-                # nXb[i+3].eq(_op1[(i+3)*b:(i+4)*b] << _op2),
-                # nXb[i+4].eq(_op1[(i+4)*b:(i+5)*b] << _op2),
-                # nXb[i+5].eq(_op1[(i+5)*b:(i+6)*b] << _op2),
-                # nXb[i+6].eq(_op1[(i+6)*b:(i+7)*b] << _op2),
-                # nXb[i+7].eq(_op1[(i+7)*b:(i+8)*b] << _op2),
-
-                temp00.eq(_op1[(i)  *b:(i+1)*b]),
+                nXb[i].eq(_op1[(i)  *b:(i+1)*b]),
                 temp01.eq(_op1[(i+1)*b:(i+2)*b]),
                 temp02.eq(_op1[(i+2)*b:(i+3)*b]),
                 temp03.eq(_op1[(i+3)*b:(i+4)*b]),
@@ -232,19 +234,26 @@ class ALU(Elaboratable):
                 temp06.eq(_op1[(i+6)*b:(i+7)*b]),
                 temp07.eq(_op1[(i+7)*b:(i+8)*b]),
 
+                nXb[i+4].eq(Mux(  Q|D,      temp04 & for_zeros, temp04)),
 
-                nXb[i+4].eq(Mux(Q|D,        temp04 << _op2, temp04)),
+                nXb[i+2].eq(Mux(  D,        temp02 & for_zeros, temp02)),
+                nXb[i+6].eq(Mux(  D,        temp06 & for_zeros, temp06)),
 
-                nXb[i+2].eq(Mux(D,          temp02 << _op2, temp02)),
-                nXb[i+6].eq(Mux(D,          temp06 << _op2, temp06)),
-
-                nXb[i+1].eq(Mux(~(DQO_any), temp01 << _op2, temp01)),
-                nXb[i+3].eq(Mux(~(DQO_any), temp03 << _op2, temp03)),
-                nXb[i+5].eq(Mux(~(DQO_any), temp05 << _op2, temp05)),
-                nXb[i+7].eq(Mux(~(DQO_any), temp07 << _op2, temp07)),
+                nXb[i+1].eq(Mux(~(DQO_any), temp01 & for_zeros, temp01)),
+                nXb[i+3].eq(Mux(~(DQO_any), temp02 & for_zeros, temp02)),
+                nXb[i+3].eq(Mux(~(DQO_any), temp03 & for_zeros, temp03)),
+                nXb[i+4].eq(Mux(~(DQO_any), temp04 & for_zeros, temp04)),
+                nXb[i+5].eq(Mux(~(DQO_any), temp05 & for_zeros, temp05)),
+                nXb[i+6].eq(Mux(~(DQO_any), temp06 & for_zeros, temp06)),
+                nXb[i+7].eq(Mux(~(DQO_any), temp07 & for_zeros, temp07)),
             ]
-            
 
+        yield self.res.eq(Cat(*nXb))
+        i = 0
+        yield self.buf.eq(
+            _op1[(i+3)*b:(i+4)*b]
+        )
+            
 
     def equal_logic_gen(self):
         _op1: Signal = Signal(256)
@@ -366,8 +375,7 @@ class ALU(Elaboratable):
                 nXb[i+7].eq(_op1[(i+7)*b:(i+8)*b] + _op2[(i+7)*b:(i+8)*b] + (sub&(~DQO_any))   + (nXb[i+6][-1]&DQO_any) ),
             ]          
 
-        yield self.res.eq(Cat(*[s[:b] for s in nXb]))
-        yield self.buf.eq(0)
+        yield self.res.eq(Cat(*[sig[:b] for sig in nXb]))
 
 
 s: int = 0
@@ -405,7 +413,35 @@ def alu_test(alu: ALU):
 def alu_sh_test(alu: ALU):
     yield from alu_ut(alu, ALU_FUNCS.SHL, 
         "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00",
+        "0",
+        DATA_TYPES._32x8b,
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00"
+    )
+
+    yield from alu_ut(alu, ALU_FUNCS.SHL, 
         "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00",
+        "1",
+        DATA_TYPES._32x8b,
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00"
+    )
+
+    yield from alu_ut(alu, ALU_FUNCS.SHL, 
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_01_0B_0A",
+        "4",
+        DATA_TYPES._32x8b,
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_10_B0_A0"
+    )
+
+    yield from alu_ut(alu, ALU_FUNCS.SHL, 
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_04_02_01",
+        "1",
+        DATA_TYPES._32x8b,
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_08_04_02"
+    )
+
+    yield from alu_ut(alu, ALU_FUNCS.SHL, 
+        "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_10_B0_A0",
+        "4",
         DATA_TYPES._32x8b,
         "00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00"
     )
