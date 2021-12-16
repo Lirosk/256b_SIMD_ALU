@@ -17,7 +17,7 @@ class ALU_FUNCS(Enum):
 
 
 class DATA_TYPES(Enum):
-    _32x8b = 0
-    _16x16b = 1
-    _8x32b = 2
-    _4x64b = 3
+    pckd_b = 0
+    pckd_w = 1
+    pckd_dw = 2
+    pckd_qw = 3

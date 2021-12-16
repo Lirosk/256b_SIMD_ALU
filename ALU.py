@@ -51,9 +51,9 @@ class ALU(Elaboratable):
         O: Signal = Signal()
 
         yield [ 
-            D.eq(Mux(self.data_type == DATA_TYPES._16x16b, 1, 0)),
-            Q.eq(Mux(self.data_type == DATA_TYPES._8x32b,  1, 0)),
-            O.eq(Mux(self.data_type == DATA_TYPES._4x64b,  1, 0)),
+            D.eq(Mux(self.data_type == DATA_TYPES.pckd_w , 1, 0)),
+            Q.eq(Mux(self.data_type == DATA_TYPES.pckd_dw, 1, 0)),
+            O.eq(Mux(self.data_type == DATA_TYPES.pckd_qw, 1, 0)),
         ]
 
         DQO_any: Signal = Signal()
@@ -123,13 +123,13 @@ class ALU(Elaboratable):
         b = 256//n
 
         yield _op2.eq(
-            Mux((self.data_type == DATA_TYPES._32x8b) & (self.op2 > b),
+            Mux((self.data_type == DATA_TYPES.pckd_b) & (self.op2 > b),
                 b,
-                Mux((self.data_type == DATA_TYPES._16x16b) & (self.op2 > 2*b),
+                Mux((self.data_type == DATA_TYPES.pckd_w) & (self.op2 > 2*b),
                     2*b,
-                    Mux((self.data_type == DATA_TYPES._8x32b) & (self.op2 > 4*b),
+                    Mux((self.data_type == DATA_TYPES.pckd_dw) & (self.op2 > 4*b),
                         4*b,
-                        Mux((self.data_type == DATA_TYPES._4x64b) & (self.op2 > 8*b),
+                        Mux((self.data_type == DATA_TYPES.pckd_qw) & (self.op2 > 8*b),
                             8*b,
                             self.op2
                         )
@@ -148,9 +148,9 @@ class ALU(Elaboratable):
         O: Signal = Signal()
 
         yield [ 
-            D.eq(Mux(self.data_type == DATA_TYPES._16x16b, 1, 0)),
-            Q.eq(Mux(self.data_type == DATA_TYPES._8x32b,  1, 0)),
-            O.eq(Mux(self.data_type == DATA_TYPES._4x64b,  1, 0)),
+            D.eq(Mux(self.data_type == DATA_TYPES.pckd_w , 1, 0)),
+            Q.eq(Mux(self.data_type == DATA_TYPES.pckd_dw, 1, 0)),
+            O.eq(Mux(self.data_type == DATA_TYPES.pckd_qw, 1, 0)),
         ]
 
         DQO_any: Signal = Signal()
@@ -209,9 +209,9 @@ class ALU(Elaboratable):
         O: Signal = Signal()
 
         yield [ 
-            D.eq(Mux(self.data_type == DATA_TYPES._16x16b, 1, 0)),
-            Q.eq(Mux(self.data_type == DATA_TYPES._8x32b,  1, 0)),
-            O.eq(Mux(self.data_type == DATA_TYPES._4x64b,  1, 0)),
+            D.eq(Mux(self.data_type == DATA_TYPES.pckd_w , 1, 0)),
+            Q.eq(Mux(self.data_type == DATA_TYPES.pckd_dw, 1, 0)),
+            O.eq(Mux(self.data_type == DATA_TYPES.pckd_qw, 1, 0)),
         ]
 
         DQO_any: Signal = Signal()
@@ -289,9 +289,9 @@ class ALU(Elaboratable):
         O: Signal = Signal()
 
         yield [ 
-            D.eq(Mux(self.data_type == DATA_TYPES._16x16b, 1, 0)),
-            Q.eq(Mux(self.data_type == DATA_TYPES._8x32b, 1, 0)),
-            O.eq(Mux(self.data_type == DATA_TYPES._4x64b, 1, 0))
+            D.eq(Mux(self.data_type == DATA_TYPES.pckd_w , 1, 0)),
+            Q.eq(Mux(self.data_type == DATA_TYPES.pckd_dw, 1, 0)),
+            O.eq(Mux(self.data_type == DATA_TYPES.pckd_qw, 1, 0))
         ]
 
         DQO_any: Signal = Signal()
