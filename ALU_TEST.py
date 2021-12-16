@@ -5,7 +5,12 @@ from Utils import to_formatted_hex
 
 s: int = 0
 f: int = 0
-def alu_ut(alu: ALU, func: ALU_FUNCS, op1: str, op2: str, data_type: DATA_TYPES, expected: str) -> Assign:
+def alu_ut( alu: ALU, 
+            func: ALU_FUNCS, 
+            op1: str, 
+            op2: str, 
+            data_type: DATA_TYPES, 
+            expected: str) -> Assign:
     global s, f
 
     yield alu.op1      .eq(int(op1, 16))
@@ -22,17 +27,6 @@ def alu_ut(alu: ALU, func: ALU_FUNCS, op1: str, op2: str, data_type: DATA_TYPES,
     else:
         print(f'WRONG:\n{op1 = }\n{op2 = }\n{func = }\n{res = }\n{data_type = }\n{expected = }\n\n')
         f += 1
-
-
-def alu_test(alu: ALU) -> Assign:
-    global s, f
-
-    yield from alu_moreless_test(alu)
-    yield from alu_addsub_test(alu)
-    yield from alu_equal_test(alu)
-    yield from alu_sh_test(alu)
-    
-    print(f'{s = }\n{f = }')
 
 
 def alu_sh_test(alu: ALU) -> Assign:
@@ -399,6 +393,17 @@ def alu_addsub_test(alu: ALU) -> Assign:
     )
 
 
+def alu_test(alu: ALU) -> Assign:
+    global s, f
+
+    yield from alu_moreless_test(alu)
+    yield from alu_addsub_test(alu)
+    yield from alu_equal_test(alu)
+    yield from alu_sh_test(alu)
+    
+    print(f'{s = }\n{f = }')
+
+
 def main():
     alu = ALU()
 
@@ -411,3 +416,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
