@@ -113,7 +113,6 @@ class ALU(Elaboratable):
         for i in range(n):
             yield self.res[i*b:(i+1)*b].eq(nXb[i])
 
-
     def sh_logic_gen(self) -> Assign:
         _op1: Signal = Signal(256)
         _op2: Signal = Signal(256)
@@ -188,7 +187,6 @@ class ALU(Elaboratable):
 
         yield self.res.eq(Mux(self.func == ALU_FUNCS.SHL, Cat(*nXb), Cat(*nXb)[::-1]))
             
-
     def equal_logic_gen(self) -> Assign:
         _op1: Signal = Signal(256)
         _op2: Signal = Signal(256)
@@ -265,7 +263,6 @@ class ALU(Elaboratable):
         for i in range(n):
             yield self.res[i*b:(i+1)*b].eq(nXb[i])
 
-
     def addsub_logic_gen(self) -> Assign:
         _op1: Signal = Signal(256)
         _op2: Signal = Signal(256)
@@ -309,3 +306,4 @@ class ALU(Elaboratable):
             ]          
 
         yield self.res.eq(Cat(*[sig[:b] for sig in nXb]))
+
