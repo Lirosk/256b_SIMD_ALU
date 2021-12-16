@@ -5,14 +5,13 @@ from CONSTS import ALU_FUNCS, DATA_TYPES
 from Utils import to_formatted_hex
 
 class ALU(Elaboratable):
-    def __init__(self) -> None:
+    def __init__(self):
         super().__init__()
         self.op1:       Signal = Signal(256,        reset=0)
         self.op2:       Signal = Signal(256,        reset=0)
         self.data_type: Signal = Signal(DATA_TYPES, reset=0)
         self.func:      Signal = Signal(ALU_FUNCS,  reset=0)
         self.res:       Signal = Signal(256,        reset=0)
-        self.buf:       Signal = Signal(256,        reset=0)
 
     def elaborate(self, platform) -> Module:
         m = Module()
@@ -74,10 +73,10 @@ class ALU(Elaboratable):
             temp16: Signal = Signal()
             temp20: Signal = Signal()
             temp24: Signal = Signal()
-            eq1: Signal = Signal()
-            eq3: Signal = Signal()
-            eq5: Signal = Signal()
-            eq7: Signal = Signal()
+            eq1:    Signal = Signal()
+            eq3:    Signal = Signal()
+            eq5:    Signal = Signal()
+            eq7:    Signal = Signal()
             
             yield [
                 eq1.eq(_op1[(i+1)*b:(i+2)*b] == _op2[(i+1)*b:(i+2)*b]),
